@@ -1,30 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Túnel con Acelerómetro</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Túnel con Acelerómetro 3D</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
       background-color: black;
+      perspective: 1000px;
     }
-    svg {
+    #wrapper {
       width: 100vw;
       height: 100vh;
+      transform-style: preserve-3d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    svg {
+      width: 100vmin;
+      height: 100vmin;
       display: block;
       transform-origin: center center;
+      transition: transform 0.05s linear;
     }
   </style>
 </head>
 <body>
-  <svg id="tunnel" viewBox="0 0 100 100">
-    <!-- Se generan los rectángulos con JS -->
-  </svg>
-
-  <script>
+  <div id="wrapper">
+    <svg id="tunnel" viewBox="0 0 100 100">
+      <!-- Rectángulos generados con JS -->
+    </svg>
+  </div>  <script>
     const svg = document.getElementById("tunnel");
+    const wrapper = document.getElementById("wrapper");
 
     // Crear cuadrados en perspectiva
     const layers = 20;
@@ -41,15 +52,30 @@
       svg.appendChild(rect);
     }
 
-    // Movimiento con acelerómetro
-    window.addEventListener("deviceorientation", (event) => {
-      const tiltX = event.beta || 0; // adelante/atrás
-      const tiltY = event.gamma || 0; // izquierda/derecha
-      const maxTilt = 30;
-      const rotateX = (tiltX / maxTilt) * 10;
-      const rotateY = (tiltY / maxTilt) * 10;
-      svg.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-    });
-  </script>
-</body>
+    // Movimiento 3D más realista con acelerómetro
+    function handleOrientation(event) {
+      const tiltX = event.beta || 0; // adelante/atrás (rotación en eje X)
+      const tiltY = event.gamma || 0; // izquierda/derecha (rotación en eje Y)
+
+      // Limitar rangos
+      const maxTilt = 45;
+      const rotateX = Math.max(-maxTilt, Math.min(maxTilt, tiltX - 90));
+      const rotateY = Math.max(-maxTilt, Math.min(maxTilt, tiltY));
+
+      svg.style.transform = `rotateX(${-rotateX}deg) rotateY(${rotateY}deg)`;
+    }
+
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+          }
+        })
+        .catch(console.error);
+    } else {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+  </script></body>
 </html>
